@@ -43,3 +43,22 @@ renameSync(TMP_FILE, OUT_FILE);
 if (readFileSync(OUT_FILE, "utf8") !== WORD) {
   throw new Error("written entry does not match the word");
 }
+
+// Post-write verification: re-read the raw bytes from disk and re-run the
+// full gate against what was actually written, not just the in-memory word.
+// This catches a truncated write, a stray newline, or any encoding drift
+// between the string and the bytes on disk.
+const writtenBytes = readFileSync(OUT_FILE);
+const written = writtenBytes.toString("utf8");
+if (writtenBytes.length !== WORD.length) {
+  throw new Error(`written entry is ${writtenBytes.length} bytes, expected ${WORD.length}`);
+}
+if (written.length < 1 || written.length > 99) {
+  throw new Error(`written entry must be 1-99 characters, got ${written.length}`);
+}
+if (!/^\S+$/.test(written)) {
+  throw new Error("written entry must be a single word with no whitespace");
+}
+if (written !== WORD) {
+  throw new Error("written entry does not match the word");
+}
